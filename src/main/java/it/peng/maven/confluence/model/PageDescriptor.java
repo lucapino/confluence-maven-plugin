@@ -1,5 +1,6 @@
 /*
  * Copyright 2011 Tomasz Maciejewski
+ * Copyright 2013 Luca Tagliani
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.fibon.maven.confluence.model;
+package it.peng.maven.confluence.model;
 
 import org.apache.commons.lang.StringUtils;
 
