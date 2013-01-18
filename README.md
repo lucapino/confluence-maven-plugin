@@ -19,7 +19,7 @@ Example plugin definition:
         </configuration>
     </plugin>
 
-Example _addpage_ goal configuration:
+Example _add-page_ goal configuration:
 -------------------------------------
     <configuration>
         <parent>
@@ -35,7 +35,7 @@ Example _addpage_ goal configuration:
         </attachments>
     </configuration>
 
-Example _addblogentry_ goal configuration:
+Example _add-blog-entry_ goal configuration:
 ------------------------------------------
     <configuration>
         <space>Example space</space>
@@ -43,7 +43,7 @@ Example _addblogentry_ goal configuration:
         <entryFile>${basedir}/blogentry.txt</entryFile>
     </configuration>
 
-Example _addcomment_ goal configuration:
+Example _add-comment_ goal configuration:
 ----------------------------------------
     <configuration>
         <page>
@@ -53,7 +53,7 @@ Example _addcomment_ goal configuration:
         <commentBody>${basedir}/comment.txt</commentBody>
     </configuration>
 
-Example _addattachment_ goal configuration:
+Example _add-attachment_ goal configuration:
 -------------------------------------------
     <configuration>
         <page>
@@ -67,7 +67,7 @@ Example _addattachment_ goal configuration:
         </attachments>
     </configuration>
 
-Example _exportpage_ goal configuration:
+Example _export-page_ goal configuration:
 ----------------------------------------
     <configuration>
         <page>
@@ -77,7 +77,7 @@ Example _exportpage_ goal configuration:
         <outputFile>${basedir}/MyPage.pdf</outputFile>
     </configuration>
 
-Example _updatepage_ goal configuration:
+Example _update-page_ goal configuration:
 -------------------------------------
     <configuration>
         <parent>
