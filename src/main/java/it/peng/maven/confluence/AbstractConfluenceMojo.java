@@ -145,17 +145,20 @@ public abstract class AbstractConfluenceMojo extends AbstractMojo {
         }
         try {
             try {
+                // initialize confluence client
                 doExecute();
             } finally {
-                log.debug("Disconnecting from Confluence server");
-                getClient().getService().logout(getClient().getToken());
-                log.debug("Disconnected from Confluence server");
+                if (client != null) {
+                    log.debug("Disconnecting from Confluence server");
+                    getClient().getService().logout(getClient().getToken());
+                    log.debug("Disconnected from Confluence server");
+                }
             }
         } catch (Exception e) {
             log.error("Error when executing mojo", e);
         }
     }
-    
+
     public abstract void doExecute() throws Exception;
 
     protected MojoFailureException fail(String message, Exception e) {
