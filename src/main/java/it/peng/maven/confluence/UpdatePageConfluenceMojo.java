@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.rmi.RemoteException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugin.logging.Log;
 
 /**
  * Updates the content of an existing page.
@@ -83,6 +84,11 @@ public class UpdatePageConfluenceMojo extends AbstractConfluenceMojo {
     
     @Override
     public void doExecute() throws Exception {
+        Log log = getLog();
+        if (!inputFile.exists()) {
+            log.warn("No template file found. Mojo skipping.");
+            return;
+        }
         String content = preparePageContent();
         if (wikiFormat) {
             try {
