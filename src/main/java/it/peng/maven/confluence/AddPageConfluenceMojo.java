@@ -20,6 +20,7 @@ import com.atlassian.confluence.rpc.soap.beans.RemotePage;
 import it.peng.maven.confluence.model.PageDescriptor;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.UnsupportedEncodingException;
 import java.rmi.RemoteException;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.maven.plugin.MojoFailureException;
@@ -91,6 +92,8 @@ public class AddPageConfluenceMojo extends AbstractConfluenceMojo {
             return getEvaluator().evaluate(inputFile, null);
         } catch (FileNotFoundException e) {
             throw fail("Unable to evaluate page content", e);
+        } catch (UnsupportedEncodingException e1) {
+            throw fail("Unable to evaluate page content", e1);
         }
     }
 
