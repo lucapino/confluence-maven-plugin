@@ -25,8 +25,15 @@ limitations under the License.
     <packaging>maven-plugin</packaging>
 
     <name>Maven Confluence Plugin</name>
+    <url>https://github.com/lucapino/confluence-maven-plugin</url>
     <description>Maven plugin for accessing Atlassian Confluence</description>
     <inceptionYear>2013</inceptionYear>
+    
+    <scm>
+        <connection>scm:git:git@github.com/lucapino/confluence-maven-plugin.git</connection>
+        <developerConnection>scm:git:git@github.com/lucapino/confluence-maven-plugin.git</developerConnection>
+        <url>https://github.com/lucapino/confluence-maven-plugin</url>
+    </scm>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
