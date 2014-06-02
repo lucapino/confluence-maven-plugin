@@ -12,7 +12,7 @@ Example plugin definition:
     <plugin>
         <groupId>it.peng.maven.plugin</groupId>
         <artifactId>confluence-maven-plugin</artifactId>
-        <version>1.0-SNAPSHOT</version>
+        <version>1.0.0</version>
         <configuration>
             <serverId>confluence-server</serverId>
             <url>https://confluence.example.org/confluence/ </url>
