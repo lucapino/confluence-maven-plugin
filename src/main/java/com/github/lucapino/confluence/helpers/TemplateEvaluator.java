@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.peng.maven.confluence.helpers;
+package com.github.lucapino.confluence.helpers;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -43,7 +43,7 @@ public class TemplateEvaluator {
     }
 
     public String evaluate(File file, HashMap<Object, Object> properties) throws FileNotFoundException, UnsupportedEncodingException {
-        FileInputStream fis = new FileInputStream(file); 
+        FileInputStream fis = new FileInputStream(file);
         InputStreamReader reader = new InputStreamReader(fis, "UTF-8");
         StringWriter writer = new StringWriter();
         if (properties != null) {

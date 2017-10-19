@@ -14,48 +14,47 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package it.peng.maven.confluence.model;
+package com.github.lucapino.confluence.model;
 
 import org.apache.commons.lang.StringUtils;
 
 public class PageDescriptor {
 
-	private Long id;
+    private String id;
 
-	private String space;
+    private String space;
 
-	private String title;
+    private String title;
 
-	public PageDescriptor() {
-	}
+    public PageDescriptor() {
+    }
 
-	public PageDescriptor(long id) {
-		this.id = id;
-	}
+    public PageDescriptor(String id) {
+        this.id = id;
+    }
 
-	public Long getId() {
-		return id;
-	}
+    public String getId() {
+        return id;
+    }
 
-	public String getSpace() {
-		return space;
-	}
+    public String getSpace() {
+        return space;
+    }
 
-	public String getTitle() {
-		return title;
-	}
+    public String getTitle() {
+        return title;
+    }
 
-	public boolean isAbsolute() {
-		return id != null;
-	}
+    public boolean isAbsolute() {
+        return id != null;
+    }
 
-	public boolean isRelative() {
-		return StringUtils.isNotBlank(space) && StringUtils.isNotBlank(title);
-	}
+    public boolean isRelative() {
+        return StringUtils.isNotBlank(space) && StringUtils.isNotBlank(title);
+    }
 
-	public boolean isValid() {
-		return isAbsolute() || isRelative();
-	}
+    public boolean isValid() {
+        return isAbsolute() || isRelative();
+    }
 
 }

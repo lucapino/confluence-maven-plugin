@@ -14,11 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.peng.maven.confluence;
+package com.github.lucapino.confluence;
 
 import com.atlassian.confluence.rpc.soap.beans.RemoteAttachment;
 import eu.medsea.mimeutil.MimeUtil;
-import it.peng.maven.confluence.model.PageDescriptor;
+import com.github.lucapino.confluence.model.PageDescriptor;
 import java.io.File;
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.plugin.MojoFailureException;

@@ -14,10 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.peng.maven.confluence;
+package com.github.lucapino.confluence;
 
-import it.peng.maven.confluence.helpers.ConfluenceClient;
-import it.peng.maven.confluence.helpers.TemplateEvaluator;
+import com.github.lucapino.confluence.helpers.ConfluenceClient;
+import com.github.lucapino.confluence.helpers.TemplateEvaluator;
 import java.net.URL;
 import org.apache.maven.artifact.manager.WagonManager;
 import org.apache.maven.plugin.AbstractMojo;
@@ -25,6 +25,7 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
+import org.apache.maven.settings.Server;
 import org.apache.maven.settings.Settings;
 import org.apache.maven.wagon.authentication.AuthenticationInfo;
 
@@ -50,13 +51,7 @@ public abstract class AbstractConfluenceMojo extends AbstractMojo {
      * @parameter parameter="confluence.url"
      * @required
      */
-    protected URL url;
-    /**
-     * Whether to use v2 API instead of v1 which is the default one
-     *
-     * @parameter parameter="confluence.v2api" default-value="false"
-     */
-    protected boolean v2api;
+    protected String url;
     /**
      * Confluence Authentication User.
      *
@@ -69,17 +64,6 @@ public abstract class AbstractConfluenceMojo extends AbstractMojo {
      * @parameter parameter="password" default-value="${scmPassword}"
      */
     protected String password;
-    /**
-     * The Maven Wagon manager to use when obtaining server authentication
-     * details.
-     *
-     * @component role="org.apache.maven.artifact.manager.WagonManager"
-     * @required
-     * @readonly
-     */
-    protected WagonManager wagonManager;
-    private TemplateEvaluator evaluator;
-    private ConfluenceClient client;
     /**
      * The Maven project
      *
@@ -94,15 +78,13 @@ public abstract class AbstractConfluenceMojo extends AbstractMojo {
      */
     protected boolean skip;
 
-    public AbstractConfluenceMojo() {
-    }
+    private TemplateEvaluator evaluator;
+    private ConfluenceClient client;
 
     public AbstractConfluenceMojo(AbstractConfluenceMojo mojo) {
         this.serverId = mojo.serverId;
         this.url = mojo.url;
-        this.v2api = mojo.v2api;
         this.project = mojo.project;
-        this.wagonManager = mojo.wagonManager;
         this.evaluator = mojo.evaluator;
         this.client = mojo.client;
         this.setLog(mojo.getLog());
@@ -122,14 +104,31 @@ public abstract class AbstractConfluenceMojo extends AbstractMojo {
         if (client == null) {
             getLog().debug("Connecting to Confluence server");
             try {
-                AuthenticationInfo info = wagonManager.getAuthenticationInfo(serverId);
-                client = new ConfluenceClient(info.getUserName(), info.getPassword(), url, v2api);
-                getLog().info("Successfuly connected to Confluence server");
+                client = new ConfluenceClient(username, password, url);
+                getLog().info("Successfuly connected to JIRA server");
             } catch (Exception e) {
-                throw fail("Unable to connect to Confluence server", e);
+                getLog().error("Unable to connect to JIRA server", e);
             }
         }
         return client;
+    }
+
+    private void loadUserCredentials() {
+        if (serverId == null) {
+            serverId = url;
+        }
+        // read credentials from settings.xml if user has not set them in configuration
+        if ((username == null || password == null) && settings != null) {
+            Server server = settings.getServer(serverId);
+            if (server != null) {
+                if (username == null) {
+                    username = server.getUsername();
+                }
+                if (password == null) {
+                    password = server.getPassword();
+                }
+            }
+        }
     }
 
     public boolean isSkip() {
@@ -144,16 +143,8 @@ public abstract class AbstractConfluenceMojo extends AbstractMojo {
             return;
         }
         try {
-            try {
-                // initialize confluence client
-                doExecute();
-            } finally {
-                if (client != null) {
-                    log.debug("Disconnecting from Confluence server");
-                    getClient().getService().logout(getClient().getToken());
-                    log.debug("Disconnected from Confluence server");
-                }
-            }
+            loadUserCredentials();
+            doExecute();
         } catch (Exception e) {
             log.error("Error when executing mojo", e);
         }

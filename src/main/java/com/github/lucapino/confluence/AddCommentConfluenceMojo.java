@@ -14,17 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.peng.maven.confluence;
+package com.github.lucapino.confluence;
 
-import com.atlassian.confluence.rpc.soap.beans.RemoteBlogEntry;
+import com.atlassian.confluence.rpc.soap.beans.RemoteComment;
+import com.github.lucapino.confluence.model.PageDescriptor;
 import java.io.File;
 import java.rmi.RemoteException;
 
 /**
- * @goal add-blog-entry
+ * @goal add-comment
  * @requiresProject false
  */
-public class AddBlogEntryConfluenceMojo extends AbstractConfluenceMojo {
+public class AddCommentConfluenceMojo extends AbstractConfluenceMojo {
 
     /**
      * Space id
@@ -32,32 +33,27 @@ public class AddBlogEntryConfluenceMojo extends AbstractConfluenceMojo {
      * @parameter
      * @required
      */
-    private String space;
+    private PageDescriptor page;
     /**
-     * Entry title
+     * Comment
      *
      * @parameter
      * @required
      */
-    private String entryTitle;
-    /**
-     * Text file with page content
-     *
-     * @parameter
-     * @required
-     */
-    private File entryFile;
+    private File commentBody;
 
     @Override
     public void doExecute() throws Exception {
-        RemoteBlogEntry entry = new RemoteBlogEntry();
-        entry.setSpace(space);
-        entry.setTitle(entryTitle);
-        entry.setContent(getEvaluator().evaluate(entryFile, null));
+        String token = getClient().getToken();
+        Long pageId = getClient().getPageId(page);
+
+        RemoteComment comment = new RemoteComment();
+        comment.setPageId(pageId);
+        comment.setContent(getEvaluator().evaluate(commentBody, null));
         try {
-            getClient().getService().storeBlogEntry(getClient().getToken(), entry);
+            getClient().getService().addComment(token, comment);
         } catch (RemoteException e) {
-            throw fail("Unable to upload blog entry", e);
+            throw fail("Unable to upload comment", e);
         }
     }
 }
