@@ -16,44 +16,42 @@
  */
 package com.github.lucapino.confluence;
 
-import com.atlassian.confluence.rpc.soap.beans.RemoteAttachment;
-import eu.medsea.mimeutil.MimeUtil;
 import com.github.lucapino.confluence.model.PageDescriptor;
+import com.github.lucapino.confluence.rest.core.api.domain.content.AttachmentBean;
+import com.github.lucapino.confluence.rest.core.api.domain.content.ContentBean;
 import java.io.File;
-import org.apache.commons.io.FileUtils;
+import java.io.FileNotFoundException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
 
 /**
- * @goal add-attachment
- * @requiresProject false
+ *
  */
+@Mojo(name = "add-attachment", requiresProject = false)
 public class AddAttachmentConfluenceMojo extends AbstractConfluenceMojo {
 
     /**
-     * Space id
-     *
-     * @parameter
-     * @required
+     * Page descriptor
      */
+    @Parameter(required = true)
     private PageDescriptor page;
     /**
      * Comment
-     *
-     * @parameter default-value=""
      */
+    @Parameter(defaultValue = "")
     private String comment;
     /**
      * Files to attach
-     *
-     * @parameter
-     * @required
      */
+    @Parameter(required = true)
     private File[] attachments;
 
     public AddAttachmentConfluenceMojo() {
+        super();
     }
 
-    public AddAttachmentConfluenceMojo(AbstractConfluenceMojo mojo, long pageId, File[] attachments) {
+    public AddAttachmentConfluenceMojo(AbstractConfluenceMojo mojo, String pageId, File[] attachments) {
         super(mojo);
         this.page = new PageDescriptor(pageId);
         this.attachments = attachments;
@@ -61,24 +59,18 @@ public class AddAttachmentConfluenceMojo extends AbstractConfluenceMojo {
 
     @Override
     public void doExecute() throws MojoFailureException {
-        String token = getClient().getToken();
-        Long pageId = getClient().getPageId(page);
+        String pageId = getClient().getPageId(page);
         for (File file : attachments) {
-            addAttachment(token, pageId, file);
+            addAttachment(pageId, file);
         }
     }
 
-    private void addAttachment(String token, Long pageId, File file) throws MojoFailureException {
-        RemoteAttachment attachment = new RemoteAttachment();
-        attachment.setPageId(pageId);
-        attachment.setComment(comment);
-        attachment.setFileName(file.getName());
+    private void addAttachment(String pageId, File file) throws MojoFailureException {
         try {
-            byte[] content = FileUtils.readFileToByteArray(file);
-            String type = MimeUtil.getMimeTypes(file).iterator().next().toString();
-            attachment.setContentType(type);
-            getClient().getService().addAttachment(token, attachment, content);
-        } catch (Exception e) {
+            AttachmentBean attachmentBean = new AttachmentBean(file, comment);
+            ContentBean parentContent = new ContentBean(pageId);
+            getClient().getClientFactory().getContentClient().uploadAttachment(attachmentBean, parentContent);
+        } catch (FileNotFoundException e) {
             throw fail("Unable to upload attachment", e);
         }
     }

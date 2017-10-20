@@ -16,47 +16,57 @@
  */
 package com.github.lucapino.confluence;
 
-import com.atlassian.confluence.rpc.soap.beans.RemoteBlogEntry;
+import com.github.lucapino.confluence.rest.core.api.domain.content.BodyBean;
+import com.github.lucapino.confluence.rest.core.api.domain.content.ContentBean;
+import com.github.lucapino.confluence.rest.core.api.domain.content.StorageBean;
+import com.github.lucapino.confluence.rest.core.api.domain.space.SpaceBean;
+import com.github.lucapino.confluence.rest.core.api.misc.ContentType;
 import java.io.File;
-import java.rmi.RemoteException;
+import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
 
 /**
- * @goal add-blog-entry
- * @requiresProject false
+ *
  */
+@Mojo(name = "add-blog-entry", requiresProject = false)
 public class AddBlogEntryConfluenceMojo extends AbstractConfluenceMojo {
 
     /**
-     * Space id
-     *
-     * @parameter
-     * @required
+     * Space name
      */
+    @Parameter(required = true)
     private String space;
     /**
      * Entry title
-     *
-     * @parameter
-     * @required
      */
+    @Parameter(required = true)
     private String entryTitle;
     /**
      * Text file with page content
-     *
-     * @parameter
-     * @required
      */
+    @Parameter(required = true)
     private File entryFile;
 
     @Override
     public void doExecute() throws Exception {
-        RemoteBlogEntry entry = new RemoteBlogEntry();
-        entry.setSpace(space);
-        entry.setTitle(entryTitle);
-        entry.setContent(getEvaluator().evaluate(entryFile, null));
+        // parse template
+        String evaluate = getEvaluator().evaluate(entryFile, null);
         try {
-            getClient().getService().storeBlogEntry(getClient().getToken(), entry);
-        } catch (RemoteException e) {
+            // create content
+            ContentBean contentBean = new ContentBean();
+            SpaceBean spaceBean = new SpaceBean(space);
+            contentBean.setSpace(spaceBean);
+            contentBean.setType(ContentType.BLOGPOST.getName());
+            contentBean.setSpace(spaceBean);
+            contentBean.setTitle(entryTitle);
+            BodyBean body = new BodyBean();
+            StorageBean storageBean = new StorageBean();
+            storageBean.setValue(evaluate);
+            storageBean.setRepresentation("storage");
+            body.setStorage(storageBean);
+            getClient().getClientFactory().getContentClient().createContent(contentBean);
+        } catch (MojoFailureException e) {
             throw fail("Unable to upload blog entry", e);
         }
     }

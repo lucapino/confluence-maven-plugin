@@ -16,18 +16,34 @@
  */
 package com.github.lucapino.confluence;
 
-import com.atlassian.confluence.rpc.soap.beans.RemotePage;
 import com.github.lucapino.confluence.model.PageDescriptor;
+import com.github.lucapino.confluence.rest.core.api.domain.content.BodyBean;
+import com.github.lucapino.confluence.rest.core.api.domain.content.ContentBean;
+import com.github.lucapino.confluence.rest.core.api.domain.content.ContentResultsBean;
+import com.github.lucapino.confluence.rest.core.api.domain.content.StorageBean;
+import com.github.lucapino.confluence.rest.core.api.misc.ContentStatus;
+import com.github.lucapino.confluence.rest.core.api.misc.ContentType;
+import com.github.lucapino.confluence.rest.core.api.misc.ExpandField;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.UnsupportedEncodingException;
+import java.net.URI;
 import java.rmi.RemoteException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.logging.Log;
+import org.apache.maven.plugins.annotations.Parameter;
 
 /**
  * Updates the content of an existing page.
- * If the user don't specify append or prepend, the new content will substitute the whole page.
+ * If the user don't specify append or prepend, the new content will substitute
+ * the whole page.
+ *
  * @goal update-page
  * @requiresProject false
  */
@@ -35,54 +51,41 @@ public class UpdatePageConfluenceMojo extends AbstractConfluenceMojo {
 
     /**
      * Use wiki format in the template
-     *
-     * @parameter default-value="false"
-     * @required
      */
+    @Parameter(defaultValue = "false", required = true)
     private Boolean wikiFormat;
     /**
      * Page's parent descriptor
-     *
-     * @parameter
-     * @required
      */
+    @Parameter(required = true)
     private PageDescriptor parent;
     /**
      * Page title
-     *
-     * @parameter
-     * @required
      */
+    @Parameter(required = true)
     private String pageTitle;
     /**
      * Text file with page content
-     *
-     * @parameter
-     * @required
      */
+    @Parameter(required = true)
     private File inputFile;
     /**
      * File to save exported verion of updated page.
-     *
-     * @parameter
      */
+    @Parameter
     private File outputFile;
     /**
      * Prepend content to existing page.
-     *
-     * @parameter default-value="false"
-     * @required
      */
+    @Parameter(defaultValue = "false", required = true)
     private boolean prepend;
-    
+
     /**
      * Append content to existing page.
-     *
-     * @parameter default-value="false"
-     * @required
      */
+    @Parameter(defaultValue = "false", required = true)
     private boolean append;
-    
+
     @Override
     public void doExecute() throws Exception {
         Log log = getLog();
@@ -93,53 +96,61 @@ public class UpdatePageConfluenceMojo extends AbstractConfluenceMojo {
         String content = preparePageContent();
         if (wikiFormat) {
             try {
-                content = getClient().getService().convertWikiToStorageFormat(getClient().getToken(), content);
+                content = convertWikiToStorageFormat(content);
             } catch (RemoteException e) {
                 throw fail("Unable to convert content from wiki format to storage format", e);
             }
         }
-        RemotePage page = createPageObject(content);
-        updatePage(page);
+        List<String> expand = new ArrayList<>();
+        expand.add(ExpandField.BODY_STORAGE.getName());
+        ContentResultsBean contentResultsBean = getClient().getClientFactory().getContentClient().getContent(ContentType.PAGE, parent.getSpace(), pageTitle, ContentStatus.ANY, null, expand, 0, 0).get();
+
+        ContentBean contentBean = contentResultsBean.getResults().get(0);
+        String oldContent = contentBean.getBody().getStorage().getValue();
+        if (prepend) {
+            content = content + oldContent;
+        } else if (append) {
+            content = oldContent + content;
+        }
+        updatePage(contentBean, content);
     }
 
     private String preparePageContent() throws MojoFailureException {
         try {
             return getEvaluator().evaluate(inputFile, null);
-        } catch (FileNotFoundException e) {
+        } catch (FileNotFoundException | UnsupportedEncodingException e) {
             throw fail("Unable to evaluate page content", e);
-        } catch (UnsupportedEncodingException e1) {
-            throw fail("Unable to evaluate page content", e1);
         }
     }
 
-    private RemotePage createPageObject(String content) throws MojoFailureException {
-        RemotePage page;
-        String pageContent;
+    private void updatePage(ContentBean contentBean, String content) throws Exception {
         try {
-            page = getClient().getService().getPage(getClient().getToken(), parent.getSpace(), pageTitle);
-            pageContent = page.getContent();
-        } catch (RemoteException e) {
-            throw fail("Unable to retrieve page to update", e);
-        }
-        if (append) {
-            pageContent += content;
-        } else if (prepend) {
-            pageContent = content + pageContent;
-        } else {
-            pageContent = content;
-        }
-        page.setContent(pageContent);
-        return page;
-    }
 
-    private void updatePage(RemotePage page) throws Exception {
-        try {
-            RemotePage created = getClient().getService().storePage(getClient().getToken(), page);
+            BodyBean body = new BodyBean();
+            StorageBean storageBean = new StorageBean();
+            storageBean.setValue(content);
+            storageBean.setRepresentation("storage");
+            body.setStorage(storageBean);
+            contentBean.setBody(body);
+
+            ContentBean updated = getClient().getClientFactory().getContentClient().updateContent(contentBean).get();
+
             if (outputFile != null) {
-                new ExportPageConfluenceMojo(this, created.getId(), outputFile).execute();
+                new ExportPageConfluenceMojo(this, updated.getId(), outputFile).execute();
             }
-        } catch (RemoteException e) {
+        } catch (InterruptedException | ExecutionException | MojoExecutionException | MojoFailureException e) {
             throw fail("Unable to update page", e);
         }
+    }
+
+    private String convertWikiToStorageFormat(String wikiText) throws Exception {
+        // we need to call <url>/rest/api/contentbody/convert/storage
+        // passing a post body with {"value":"<wikiText>","representation":"wiki"}
+        URI uri = new URI(url + "rest/api/contentbody/convert/storage");
+        Map<String, String> params = new HashMap<>();
+        params.put("value", wikiText);
+        params.put("representation", "wiki");
+        Map<String, String> executePostRequest = getClient().getRequestService().executePostRequest(uri, params, Map.class);
+        return executePostRequest.get("value");
     }
 }

@@ -16,15 +16,23 @@
  */
 package com.github.lucapino.confluence;
 
-import com.atlassian.confluence.rpc.soap.beans.RemoteComment;
 import com.github.lucapino.confluence.model.PageDescriptor;
+import com.github.lucapino.confluence.rest.core.api.domain.content.BodyBean;
+import com.github.lucapino.confluence.rest.core.api.domain.content.ContainerBean;
+import com.github.lucapino.confluence.rest.core.api.domain.content.ContentBean;
+import com.github.lucapino.confluence.rest.core.api.domain.content.ContentResultsBean;
+import com.github.lucapino.confluence.rest.core.api.domain.content.StorageBean;
+import com.github.lucapino.confluence.rest.core.api.misc.ContentStatus;
+import com.github.lucapino.confluence.rest.core.api.misc.ContentType;
 import java.io.File;
 import java.rmi.RemoteException;
+import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.Mojo;
 
 /**
- * @goal add-comment
- * @requiresProject false
+ *
  */
+@Mojo(name = "add-comment", requiresProject = false)
 public class AddCommentConfluenceMojo extends AbstractConfluenceMojo {
 
     /**
@@ -44,16 +52,6 @@ public class AddCommentConfluenceMojo extends AbstractConfluenceMojo {
 
     @Override
     public void doExecute() throws Exception {
-        String token = getClient().getToken();
-        Long pageId = getClient().getPageId(page);
-
-        RemoteComment comment = new RemoteComment();
-        comment.setPageId(pageId);
-        comment.setContent(getEvaluator().evaluate(commentBody, null));
-        try {
-            getClient().getService().addComment(token, comment);
-        } catch (RemoteException e) {
-            throw fail("Unable to upload comment", e);
-        }
+        // TODO
     }
 }

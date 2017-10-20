@@ -17,22 +17,16 @@
 package com.github.lucapino.confluence;
 
 import com.github.lucapino.confluence.model.PageDescriptor;
+import com.github.lucapino.confluence.rest.core.api.RequestException;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.http.Header;
-import org.apache.http.HttpResponse;
-import org.apache.http.auth.AuthenticationException;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.auth.BasicScheme;
-import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.maven.plugin.MojoFailureException;
-import org.apache.maven.wagon.authentication.AuthenticationInfo;
 
 /**
  * @goal export-page
@@ -58,7 +52,7 @@ public class ExportPageConfluenceMojo extends AbstractConfluenceMojo {
     public ExportPageConfluenceMojo() {
     }
 
-    public ExportPageConfluenceMojo(AbstractConfluenceMojo mojo, long pageId, File outputFile) {
+    public ExportPageConfluenceMojo(AbstractConfluenceMojo mojo, String pageId, File outputFile) {
         super(mojo);
         this.page = new PageDescriptor(pageId);
         this.outputFile = outputFile;
@@ -71,9 +65,8 @@ public class ExportPageConfluenceMojo extends AbstractConfluenceMojo {
         if (format == null) {
             throw new MojoFailureException("Format " + format + " is not suported");
         } else {
-            Long pageId = getClient().getPageId(page);
-            HttpGet request = prepareExportPageRequest(format, pageId);
-            downloadFile(request);
+            String pageId = getClient().getPageId(page);
+            downloadFile(format, pageId);
         }
     }
 
@@ -84,39 +77,16 @@ public class ExportPageConfluenceMojo extends AbstractConfluenceMojo {
             }
         }
         return null;
-
     }
 
-    private HttpGet prepareExportPageRequest(ExportPageConfluenceMojo.Format format, Long pageId) throws MojoFailureException {
-        HttpGet get = new HttpGet(url + format.url + "?pageId=" + pageId);
-        AuthenticationInfo info = wagonManager.getAuthenticationInfo(serverId);
-        UsernamePasswordCredentials credentials = new UsernamePasswordCredentials(info.getUserName(), info.getPassword());
-        BasicScheme scheme = new BasicScheme();
-        try {
-            Header authorizationHeader = scheme.authenticate(credentials, get);
-            get.addHeader(authorizationHeader);
-            return get;
-        } catch (AuthenticationException e) {
-            throw fail("Unable to set authentication data", e);
-        }
-    }
-
-    private void downloadFile(HttpGet request) throws MojoFailureException {
-        InputStream in = null;
+    private void downloadFile(ExportPageConfluenceMojo.Format format, String pageId) throws MojoFailureException {
         FileOutputStream out = null;
-        HttpClient httpClient = HttpClientBuilder.create().build();
+        InputStream in = null;
         try {
-            HttpResponse response = httpClient.execute(request);
-            if (response == null || response.getEntity() == null) {
-                getLog().warn("Nothing to save - empty response");
-            } else {
-                in = response.getEntity().getContent();
-                out = new FileOutputStream(outputFile);
-                IOUtils.copy(in, out);
-            }
-        } catch (IOException e) {
-            throw fail("Unable to download page", e);
-        } catch (IllegalStateException e) {
+            in = getClient().getRequestService().executeGetRequestForDownload(new URI(url + format.url + "?pageId=" + pageId));
+            out = new FileOutputStream(outputFile);
+            IOUtils.copy(in, out);
+        } catch (URISyntaxException | RequestException | IOException | IllegalStateException e) {
             throw fail("Unable to download page", e);
         } finally {
             IOUtils.closeQuietly(in);

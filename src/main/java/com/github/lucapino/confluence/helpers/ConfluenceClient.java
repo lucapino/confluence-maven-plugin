@@ -19,6 +19,7 @@ package com.github.lucapino.confluence.helpers;
 import com.github.lucapino.confluence.model.PageDescriptor;
 import com.github.lucapino.confluence.rest.client.api.ClientFactory;
 import com.github.lucapino.confluence.rest.client.impl.ClientFactoryImpl;
+import com.github.lucapino.confluence.rest.core.api.RequestService;
 import com.github.lucapino.confluence.rest.core.api.domain.content.ContentResultsBean;
 import com.github.lucapino.confluence.rest.core.api.misc.ContentStatus;
 import com.github.lucapino.confluence.rest.core.api.misc.ContentType;
@@ -32,13 +33,14 @@ import java.util.concurrent.Executors;
 
 public class ConfluenceClient {
 
+    private final HttpAuthRequestService requestService;
     private final ClientFactory factory;
 
     public ConfluenceClient(String username, String password, String url) throws Exception {
         ExecutorService executorService = Executors.newFixedThreadPool(100);
 
         APIAuthConfig conf = new APIAuthConfig(url, username, password);
-        HttpAuthRequestService requestService = new HttpAuthRequestService();
+        requestService = new HttpAuthRequestService();
         requestService.connect(new URI(conf.getBaseUrl()), conf.getUser(), conf.getPassword());
 
         APIUriProvider uriProvider = new APIUriProvider(new URI(conf.getBaseUrl() + "/confluence"));
@@ -62,5 +64,9 @@ public class ConfluenceClient {
 
     public ClientFactory getClientFactory() {
         return factory;
+    }
+
+    public RequestService getRequestService() {
+        return requestService;
     }
 }

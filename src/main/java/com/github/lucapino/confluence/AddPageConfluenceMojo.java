@@ -16,19 +16,28 @@
  */
 package com.github.lucapino.confluence;
 
-import com.atlassian.confluence.rpc.soap.beans.RemotePage;
 import com.github.lucapino.confluence.model.PageDescriptor;
+import com.github.lucapino.confluence.rest.core.api.domain.content.BodyBean;
+import com.github.lucapino.confluence.rest.core.api.domain.content.ContainerBean;
+import com.github.lucapino.confluence.rest.core.api.domain.content.ContentBean;
+import com.github.lucapino.confluence.rest.core.api.domain.content.StorageBean;
+import com.github.lucapino.confluence.rest.core.api.domain.space.SpaceBean;
+import com.github.lucapino.confluence.rest.core.api.misc.ContentType;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.UnsupportedEncodingException;
+import java.net.URI;
 import java.rmi.RemoteException;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.Mojo;
 
 /**
- * @goal add-page
- * @requiresProject false
+ *
  */
+@Mojo(name = "add-page", requiresProject = false)
 public class AddPageConfluenceMojo extends AbstractConfluenceMojo {
 
     /**
@@ -74,51 +83,67 @@ public class AddPageConfluenceMojo extends AbstractConfluenceMojo {
 
     @Override
     public void doExecute() throws Exception {
-        Long parentId = getClient().getPageId(parent);
         String content = preparePageContent();
         if (wikiFormat) {
             try {
-                content = getClient().getService().convertWikiToStorageFormat(getClient().getToken(), content);
+                content = convertWikiToStorageFormat(content);
             } catch (RemoteException e) {
                 throw fail("Unable to convert content from wiki format to storage format", e);
             }
         }
-        RemotePage page = createPageObject(parentId, content);
-        uploadPage(page);
+        createPageObject(parent, content);
     }
 
     private String preparePageContent() throws MojoFailureException {
         try {
             return getEvaluator().evaluate(inputFile, null);
-        } catch (FileNotFoundException e) {
+        } catch (FileNotFoundException | UnsupportedEncodingException e) {
             throw fail("Unable to evaluate page content", e);
-        } catch (UnsupportedEncodingException e1) {
-            throw fail("Unable to evaluate page content", e1);
         }
     }
 
-    private RemotePage createPageObject(Long parentId, String content) {
-        RemotePage page = new RemotePage();
-        page.setTitle(pageTitle);
-        if (parentId != null) {
-            page.setParentId(parentId);
-        }
-        page.setContent(content);
-        page.setSpace(parent.getSpace());
-        return page;
-    }
-
-    private void uploadPage(RemotePage page) throws Exception {
+    private void createPageObject(PageDescriptor parent, String content) throws Exception {
         try {
-            RemotePage created = getClient().getService().storePage(getClient().getToken(), page);
+            String parentId = getClient().getPageId(parent);
+            String space = parent.getSpace();
+            // create content
+            ContentBean contentBean = new ContentBean();
+            SpaceBean spaceBean = new SpaceBean(parent.getSpace());
+            contentBean.setSpace(spaceBean);
+            ContainerBean containerBean = new ContainerBean();
+            containerBean.setKey(space);
+            containerBean.setId(Integer.valueOf(parentId));
+            contentBean.setContainer(containerBean);
+            contentBean.setType(ContentType.PAGE.getName());
+            contentBean.setSpace(spaceBean);
+            contentBean.setTitle(pageTitle);
+            BodyBean body = new BodyBean();
+            StorageBean storageBean = new StorageBean();
+            storageBean.setValue(content);
+            storageBean.setRepresentation("storage");
+            body.setStorage(storageBean);
+            contentBean.setBody(body);
+            ContentBean newContentBean = getClient().getClientFactory().getContentClient().createContent(contentBean).get();
+
             if (!ArrayUtils.isEmpty(attachments)) {
-                new AddAttachmentConfluenceMojo(this, created.getId(), attachments).execute();
+                new AddAttachmentConfluenceMojo(this, newContentBean.getId(), attachments).execute();
             }
             if (outputFile != null) {
-                new ExportPageConfluenceMojo(this, created.getId(), outputFile).execute();
+                new ExportPageConfluenceMojo(this, newContentBean.getId(), outputFile).execute();
             }
-        } catch (RemoteException e) {
+        } catch (Exception e) {
             throw fail("Unable to upload page", e);
         }
+    }
+
+    private String convertWikiToStorageFormat(String wikiText) throws Exception {
+        // we need to call <url>/rest/api/contentbody/convert/storage
+        // passing a post body with {"value":"<wikiText>","representation":"wiki"}
+        URI uri = new URI(url + "rest/api/contentbody/convert/storage");
+        Map<String, String> params = new HashMap<>();
+        params.put("value", wikiText);
+        params.put("representation", "wiki");
+        Map<String, String> executePostRequest = getClient().getRequestService().executePostRequest(uri, params, Map.class);
+        return executePostRequest.get("value");
     }
 }

@@ -18,28 +18,26 @@ package com.github.lucapino.confluence;
 
 import com.github.lucapino.confluence.helpers.ConfluenceClient;
 import com.github.lucapino.confluence.helpers.TemplateEvaluator;
-import java.net.URL;
-import org.apache.maven.artifact.manager.WagonManager;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.logging.Log;
+import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.settings.Server;
 import org.apache.maven.settings.Settings;
-import org.apache.maven.wagon.authentication.AuthenticationInfo;
 
 public abstract class AbstractConfluenceMojo extends AbstractMojo {
 
     /**
-     * @parameter parameter="settings"
+     *
      */
+    @Parameter
     Settings settings;
     /**
      * Server id corresponding to entry within <i>settings.xml</i>
-     *
-     * @parameter parameter="confluence.server"
      */
+    @Parameter(name = "confluence.server")
     protected String serverId;
     /**
      * URL pointing to Confluence server, i.e:
@@ -47,39 +45,35 @@ public abstract class AbstractConfluenceMojo extends AbstractMojo {
      * <li>https://developer.atlassian.com</li>
      * <li>http://www.example.org/confluence/</li>
      * </ul>
-     *
-     * @parameter parameter="confluence.url"
-     * @required
      */
+    @Parameter(name = "confluence.url", required = true)
     protected String url;
     /**
      * Confluence Authentication User.
-     *
-     * @parameter parameter="username" default-value="${scmUsername}"
      */
+    @Parameter(defaultValue = "${scmUsername")
     protected String username;
     /**
      * Confluence Authentication Password.
-     *
-     * @parameter parameter="password" default-value="${scmPassword}"
      */
+    @Parameter(defaultValue = "${scmPassword}")
     protected String password;
     /**
      * The Maven project
-     *
-     * @parameter default-value="${project}"
-     * @readonly
      */
+    @Parameter(defaultValue = "${project}", readonly = true)
     protected MavenProject project;
     /**
      * Returns if this plugin is enabled for this context
-     *
-     * @parameter parameter="skip"
      */
+    @Parameter(defaultValue = "false")
     protected boolean skip;
 
     private TemplateEvaluator evaluator;
     private ConfluenceClient client;
+
+    public AbstractConfluenceMojo() {
+    }
 
     public AbstractConfluenceMojo(AbstractConfluenceMojo mojo) {
         this.serverId = mojo.serverId;
@@ -87,8 +81,8 @@ public abstract class AbstractConfluenceMojo extends AbstractMojo {
         this.project = mojo.project;
         this.evaluator = mojo.evaluator;
         this.client = mojo.client;
-        this.setLog(mojo.getLog());
-        this.setPluginContext(mojo.getPluginContext());
+//        this.setLog(mojo.getLog());
+//        this.setPluginContext(mojo.getPluginContext());
     }
 
     public TemplateEvaluator getEvaluator() {
