@@ -112,7 +112,7 @@ public class AddPageConfluenceMojo extends AbstractConfluenceMojo {
             contentBean.setSpace(spaceBean);
             ContainerBean containerBean = new ContainerBean();
             containerBean.setKey(space);
-            containerBean.setId(Integer.valueOf(parentId));
+            containerBean.setId(parentId);
             contentBean.setContainer(containerBean);
             contentBean.setType(ContentType.PAGE.getName());
             contentBean.setSpace(spaceBean);
