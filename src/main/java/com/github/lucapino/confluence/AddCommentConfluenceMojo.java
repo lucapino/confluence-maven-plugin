@@ -16,18 +16,19 @@
  */
 package com.github.lucapino.confluence;
 
+import com.github.lucapino.confluence.model.Body;
+import com.github.lucapino.confluence.model.Content;
+import com.github.lucapino.confluence.model.ContentResultList;
 import com.github.lucapino.confluence.model.PageDescriptor;
-import com.github.lucapino.confluence.rest.core.api.domain.content.BodyBean;
-import com.github.lucapino.confluence.rest.core.api.domain.content.ContainerBean;
-import com.github.lucapino.confluence.rest.core.api.domain.content.ContentBean;
-import com.github.lucapino.confluence.rest.core.api.domain.content.ContentResultsBean;
-import com.github.lucapino.confluence.rest.core.api.domain.content.StorageBean;
-import com.github.lucapino.confluence.rest.core.api.misc.ContentStatus;
-import com.github.lucapino.confluence.rest.core.api.misc.ContentType;
+import com.github.lucapino.confluence.model.Parent;
+import com.github.lucapino.confluence.model.Space;
+import com.github.lucapino.confluence.model.Storage;
+import com.github.lucapino.confluence.model.Type;
 import java.io.File;
-import java.rmi.RemoteException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
 
 /**
  *
@@ -38,20 +39,40 @@ public class AddCommentConfluenceMojo extends AbstractConfluenceMojo {
     /**
      * Space id
      *
-     * @parameter
-     * @required
      */
+    @Parameter(required = true)
     private PageDescriptor page;
     /**
      * Comment
      *
-     * @parameter
-     * @required
      */
+    @Parameter(required = true)
     private File commentBody;
 
     @Override
     public void doExecute() throws Exception {
-        // TODO
+        Log log = getLog();
+        // Run only at the execution root
+        if (runOnlyAtExecutionRoot && !isThisTheExecutionRoot()) {
+            log.info("Skipping the announcement mail in this project because it's not the Execution Root");
+        } else {// parse template
+            String evaluate = processContent(commentBody);
+            try {
+                // configure page
+                ContentResultList contentResult = getClient().getContentBySpaceKeyAndTitle(page.getSpace(), page.getTitle());
+                Content parent = contentResult.getContents()[0];
+                Parent parentPage = new Parent();
+                parentPage.setId(parent.getId());
+                Content content = new Content();
+                content.setType(Type.COMMENT);
+                content.setSpace(new Space(page.getSpace()));
+                content.setTitle(page.getTitle());
+                content.setAncestors(new Parent[]{parentPage});
+                content.setBody(new Body(new Storage(evaluate, Storage.Representation.STORAGE.toString())));
+                getClient().postContent(content);
+            } catch (MojoFailureException e) {
+                throw fail("Unable to upload blog entry", e);
+            }
+        }
     }
 }

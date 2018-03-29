@@ -16,12 +16,19 @@
  */
 package com.github.lucapino.confluence;
 
+import com.github.lucapino.confluence.model.Body;
+import com.github.lucapino.confluence.model.Content;
+import com.github.lucapino.confluence.model.ContentResultList;
 import com.github.lucapino.confluence.model.PageDescriptor;
-import com.github.lucapino.confluence.rest.core.api.domain.content.AttachmentBean;
-import com.github.lucapino.confluence.rest.core.api.domain.content.ContentBean;
+import com.github.lucapino.confluence.model.Parent;
+import com.github.lucapino.confluence.model.Space;
+import com.github.lucapino.confluence.model.Storage;
+import com.github.lucapino.confluence.model.Type;
 import java.io.File;
-import java.io.FileNotFoundException;
+import java.io.IOException;
+import org.apache.commons.io.FileUtils;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
@@ -51,26 +58,40 @@ public class AddAttachmentConfluenceMojo extends AbstractConfluenceMojo {
         super();
     }
 
-    public AddAttachmentConfluenceMojo(AbstractConfluenceMojo mojo, String pageId, File[] attachments) {
+    public AddAttachmentConfluenceMojo(AbstractConfluenceMojo mojo, PageDescriptor page, File[] attachments) {
         super(mojo);
-        this.page = new PageDescriptor(pageId);
+        this.page = page;
         this.attachments = attachments;
     }
 
     @Override
     public void doExecute() throws MojoFailureException {
-        String pageId = getClient().getPageId(page);
-        for (File file : attachments) {
-            addAttachment(pageId, file);
+        Log log = getLog();
+        // Run only at the execution root
+        if (runOnlyAtExecutionRoot && !isThisTheExecutionRoot()) {
+            log.info("Skipping the announcement mail in this project because it's not the Execution Root");
+        } else {
+            for (File file : attachments) {
+                addAttachment(page, file);
+            }
         }
     }
 
-    private void addAttachment(String pageId, File file) throws MojoFailureException {
+    private void addAttachment(PageDescriptor page, File file) throws MojoFailureException {
         try {
-            AttachmentBean attachmentBean = new AttachmentBean(file, comment);
-            ContentBean parentContent = new ContentBean(pageId);
-            getClient().getClientFactory().getContentClient().uploadAttachment(attachmentBean, parentContent);
-        } catch (FileNotFoundException e) {
+            // configure page
+            ContentResultList contentResult = getClient().getContentBySpaceKeyAndTitle(page.getSpace(), page.getTitle());
+            Content parent = contentResult.getContents()[0];
+            Parent parentPage = new Parent();
+            parentPage.setId(parent.getId());
+            Content content = new Content();
+            content.setType(Type.ATTACHMENT);
+            content.setSpace(new Space(page.getSpace()));
+            content.setTitle(page.getTitle());
+            content.setAncestors(new Parent[]{parentPage});
+            content.setBody(new Body(new Storage(FileUtils.readFileToString(file), Storage.Representation.STORAGE.toString())));
+            getClient().postContent(content);
+        } catch (IOException e) {
             throw fail("Unable to upload attachment", e);
         }
     }

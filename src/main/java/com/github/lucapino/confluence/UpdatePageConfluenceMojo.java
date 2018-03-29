@@ -16,26 +16,11 @@
  */
 package com.github.lucapino.confluence;
 
+import com.github.lucapino.confluence.model.Body;
+import com.github.lucapino.confluence.model.Content;
 import com.github.lucapino.confluence.model.PageDescriptor;
-import com.github.lucapino.confluence.rest.core.api.domain.content.BodyBean;
-import com.github.lucapino.confluence.rest.core.api.domain.content.ContentBean;
-import com.github.lucapino.confluence.rest.core.api.domain.content.ContentResultsBean;
-import com.github.lucapino.confluence.rest.core.api.domain.content.StorageBean;
-import com.github.lucapino.confluence.rest.core.api.misc.ContentStatus;
-import com.github.lucapino.confluence.rest.core.api.misc.ContentType;
-import com.github.lucapino.confluence.rest.core.api.misc.ExpandField;
+import com.github.lucapino.confluence.model.Storage;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.UnsupportedEncodingException;
-import java.net.URI;
-import java.rmi.RemoteException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugins.annotations.Parameter;
 
@@ -70,11 +55,6 @@ public class UpdatePageConfluenceMojo extends AbstractConfluenceMojo {
     @Parameter(required = true)
     private File inputFile;
     /**
-     * File to save exported verion of updated page.
-     */
-    @Parameter
-    private File outputFile;
-    /**
      * Prepend content to existing page.
      */
     @Parameter(defaultValue = "false", required = true)
@@ -89,68 +69,38 @@ public class UpdatePageConfluenceMojo extends AbstractConfluenceMojo {
     @Override
     public void doExecute() throws Exception {
         Log log = getLog();
-        if (!inputFile.exists()) {
-            log.warn("No template file found. Mojo skipping.");
-            return;
-        }
-        String content = preparePageContent();
-        if (wikiFormat) {
-            try {
-                content = convertWikiToStorageFormat(content);
-            } catch (RemoteException e) {
-                throw fail("Unable to convert content from wiki format to storage format", e);
+        // Run only at the execution root
+        if (runOnlyAtExecutionRoot && !isThisTheExecutionRoot()) {
+            log.info("Skipping the announcement mail in this project because it's not the Execution Root");
+        } else {
+            if (!inputFile.exists()) {
+                log.warn("No template file found. Mojo skipping.");
+                return;
             }
-        }
-        List<String> expand = new ArrayList<>();
-        expand.add(ExpandField.BODY_STORAGE.getName());
-        ContentResultsBean contentResultsBean = getClient().getClientFactory().getContentClient().getContent(ContentType.PAGE, parent.getSpace(), pageTitle, ContentStatus.ANY, null, expand, 0, 0).get();
 
-        ContentBean contentBean = contentResultsBean.getResults().get(0);
-        String oldContent = contentBean.getBody().getStorage().getValue();
-        if (prepend) {
-            content = content + oldContent;
-        } else if (append) {
-            content = oldContent + content;
-        }
-        updatePage(contentBean, content);
-    }
-
-    private String preparePageContent() throws MojoFailureException {
-        try {
-            return getEvaluator().evaluate(inputFile, null);
-        } catch (FileNotFoundException | UnsupportedEncodingException e) {
-            throw fail("Unable to evaluate page content", e);
-        }
-    }
-
-    private void updatePage(ContentBean contentBean, String content) throws Exception {
-        try {
-
-            BodyBean body = new BodyBean();
-            StorageBean storageBean = new StorageBean();
-            storageBean.setValue(content);
-            storageBean.setRepresentation("storage");
-            body.setStorage(storageBean);
-            contentBean.setBody(body);
-
-            ContentBean updated = getClient().getClientFactory().getContentClient().updateContent(contentBean).get();
-
-            if (outputFile != null) {
-                new ExportPageConfluenceMojo(this, updated.getId(), outputFile).execute();
+            // configure page
+            Content updatedPage = getClient().getContentBySpaceKeyAndTitle(parent.getSpace(), pageTitle).getContents()[0];
+            // always in storage format
+            String oldContent = updatedPage.getBody().getStorage().getValue();
+            String content = processContent(inputFile);
+            Storage newStorage;
+            if (wikiFormat) {
+                Storage contentStorage = new Storage(content, Storage.Representation.WIKI.toString());
+                newStorage = getClient().convertContent(contentStorage, Storage.Representation.STORAGE);
+            } else {
+                newStorage = new Storage(content, Storage.Representation.STORAGE.toString());
             }
-        } catch (InterruptedException | ExecutionException | MojoExecutionException | MojoFailureException e) {
-            throw fail("Unable to update page", e);
-        }
-    }
+            // now append or prepend
+            if (prepend) {
+                content = newStorage.getValue() + oldContent;
+            } else if (append) {
+                content = oldContent + newStorage.getValue();
+            }
+            newStorage.setValue(content);
 
-    private String convertWikiToStorageFormat(String wikiText) throws Exception {
-        // we need to call <url>/rest/api/contentbody/convert/storage
-        // passing a post body with {"value":"<wikiText>","representation":"wiki"}
-        URI uri = new URI(url + "rest/api/contentbody/convert/storage");
-        Map<String, String> params = new HashMap<>();
-        params.put("value", wikiText);
-        params.put("representation", "wiki");
-        Map<String, String> executePostRequest = getClient().getRequestService().executePostRequest(uri, params, Map.class);
-        return executePostRequest.get("value");
+            updatedPage.setBody(new Body(newStorage));
+            getClient().postContent(updatedPage);
+
+        }
     }
 }

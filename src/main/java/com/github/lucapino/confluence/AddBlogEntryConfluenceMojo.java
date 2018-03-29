@@ -16,13 +16,15 @@
  */
 package com.github.lucapino.confluence;
 
-import com.github.lucapino.confluence.rest.core.api.domain.content.BodyBean;
-import com.github.lucapino.confluence.rest.core.api.domain.content.ContentBean;
-import com.github.lucapino.confluence.rest.core.api.domain.content.StorageBean;
-import com.github.lucapino.confluence.rest.core.api.domain.space.SpaceBean;
-import com.github.lucapino.confluence.rest.core.api.misc.ContentType;
+import com.github.lucapino.confluence.model.Body;
+import com.github.lucapino.confluence.model.Content;
+import com.github.lucapino.confluence.model.Space;
+import com.github.lucapino.confluence.model.Storage;
+import com.github.lucapino.confluence.model.Type;
 import java.io.File;
+import org.apache.commons.io.FileUtils;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
@@ -50,24 +52,23 @@ public class AddBlogEntryConfluenceMojo extends AbstractConfluenceMojo {
 
     @Override
     public void doExecute() throws Exception {
-        // parse template
-        String evaluate = getEvaluator().evaluate(entryFile, null);
-        try {
-            // create content
-            ContentBean contentBean = new ContentBean();
-            SpaceBean spaceBean = new SpaceBean(space);
-            contentBean.setSpace(spaceBean);
-            contentBean.setType(ContentType.BLOGPOST.getName());
-            contentBean.setSpace(spaceBean);
-            contentBean.setTitle(entryTitle);
-            BodyBean body = new BodyBean();
-            StorageBean storageBean = new StorageBean();
-            storageBean.setValue(evaluate);
-            storageBean.setRepresentation("storage");
-            body.setStorage(storageBean);
-            getClient().getClientFactory().getContentClient().createContent(contentBean);
-        } catch (MojoFailureException e) {
-            throw fail("Unable to upload blog entry", e);
+        Log log = getLog();
+        // Run only at the execution root
+        if (runOnlyAtExecutionRoot && !isThisTheExecutionRoot()) {
+            log.info("Skipping the announcement mail in this project because it's not the Execution Root");
+        } else {// parse template
+            String evaluate = processContent(entryFile);
+            try {
+                // configure page
+                Content content = new Content();
+                content.setType(Type.BLOGPOST);
+                content.setSpace(new Space(space));
+                content.setTitle(entryTitle);
+                content.setBody(new Body(new Storage(evaluate, Storage.Representation.STORAGE.toString())));
+                getClient().postContent(content);
+            } catch (MojoFailureException e) {
+                throw fail("Unable to upload blog entry", e);
+            }
         }
     }
 }

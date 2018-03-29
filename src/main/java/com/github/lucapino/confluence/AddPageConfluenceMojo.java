@@ -16,23 +16,23 @@
  */
 package com.github.lucapino.confluence;
 
+import com.github.lucapino.confluence.model.Body;
+import com.github.lucapino.confluence.model.Content;
+import com.github.lucapino.confluence.model.ContentResultList;
 import com.github.lucapino.confluence.model.PageDescriptor;
-import com.github.lucapino.confluence.rest.core.api.domain.content.BodyBean;
-import com.github.lucapino.confluence.rest.core.api.domain.content.ContainerBean;
-import com.github.lucapino.confluence.rest.core.api.domain.content.ContentBean;
-import com.github.lucapino.confluence.rest.core.api.domain.content.StorageBean;
-import com.github.lucapino.confluence.rest.core.api.domain.space.SpaceBean;
-import com.github.lucapino.confluence.rest.core.api.misc.ContentType;
+import com.github.lucapino.confluence.model.Parent;
+import com.github.lucapino.confluence.model.Space;
+import com.github.lucapino.confluence.model.Storage;
+import com.github.lucapino.confluence.model.Type;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.UnsupportedEncodingException;
-import java.net.URI;
-import java.rmi.RemoteException;
 import java.util.HashMap;
-import java.util.Map;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
 
 /**
  *
@@ -43,107 +43,75 @@ public class AddPageConfluenceMojo extends AbstractConfluenceMojo {
     /**
      * Use wiki format in the template
      *
-     * @parameter default-value="false"
-     * @required
      */
+    @Parameter(defaultValue = "false", required = true)
     private Boolean wikiFormat;
     /**
      * Page's parent descriptor
      *
-     * @parameter
-     * @required
      */
+    @Parameter(required = true)
     private PageDescriptor parent;
     /**
      * Page title
      *
-     * @parameter
-     * @required
      */
+    @Parameter(required = true)
     private String pageTitle;
     /**
      * Text file with page content
      *
-     * @parameter
-     * @required
      */
+    @Parameter(required = true)
     private File inputFile;
-    /**
-     * File to save exported verion of newly created page.
-     *
-     * @parameter
-     */
-    private File outputFile;
     /**
      * Attachments to add
      *
-     * @parameter
      */
+    @Parameter
     private File[] attachments;
 
     @Override
     public void doExecute() throws Exception {
-        String content = preparePageContent();
-        if (wikiFormat) {
-            try {
-                content = convertWikiToStorageFormat(content);
-            } catch (RemoteException e) {
-                throw fail("Unable to convert content from wiki format to storage format", e);
-            }
-        }
-        createPageObject(parent, content);
-    }
-
-    private String preparePageContent() throws MojoFailureException {
-        try {
-            return getEvaluator().evaluate(inputFile, null);
-        } catch (FileNotFoundException | UnsupportedEncodingException e) {
-            throw fail("Unable to evaluate page content", e);
-        }
+        String evaluate = processContent(inputFile);
+        createPageObject(parent, evaluate);
     }
 
     private void createPageObject(PageDescriptor parent, String content) throws Exception {
-        try {
-            String parentId = getClient().getPageId(parent);
-            String space = parent.getSpace();
-            // create content
-            ContentBean contentBean = new ContentBean();
-            SpaceBean spaceBean = new SpaceBean(parent.getSpace());
-            contentBean.setSpace(spaceBean);
-            ContainerBean containerBean = new ContainerBean();
-            containerBean.setKey(space);
-            containerBean.setId(parentId);
-            contentBean.setContainer(containerBean);
-            contentBean.setType(ContentType.PAGE.getName());
-            contentBean.setSpace(spaceBean);
-            contentBean.setTitle(pageTitle);
-            BodyBean body = new BodyBean();
-            StorageBean storageBean = new StorageBean();
-            storageBean.setValue(content);
-            storageBean.setRepresentation("storage");
-            body.setStorage(storageBean);
-            contentBean.setBody(body);
-            ContentBean newContentBean = getClient().getClientFactory().getContentClient().createContent(contentBean).get();
+        Log log = getLog();
+        // Run only at the execution root
+        if (runOnlyAtExecutionRoot && !isThisTheExecutionRoot()) {
+            log.info("Skipping the announcement mail in this project because it's not the Execution Root");
+        } else {
+            try {
+                // configure page
+                ContentResultList contentResult = getClient().getContentBySpaceKeyAndTitle(parent.getSpace(), parent.getTitle());
+                Content parentContent = contentResult.getContents()[0];
+                Parent parentPage = new Parent();
+                parentPage.setId(parentContent.getId());
+                Content newPage = new Content();
+                newPage.setType(Type.PAGE);
+                newPage.setSpace(new Space(parent.getSpace()));
+                newPage.setTitle(pageTitle);
+                newPage.setAncestors(new Parent[]{parentPage});
+                Storage newStorage;
+                if (wikiFormat) {
+                    Storage contentStorage = new Storage(content, Storage.Representation.WIKI.toString());
+                    newStorage = getClient().convertContent(contentStorage, Storage.Representation.STORAGE);
+                } else {
+                    newStorage = new Storage(content, Storage.Representation.STORAGE.toString());
+                }
+                newPage.setBody(new Body(newStorage));
+                getClient().postContent(newPage);
 
-            if (!ArrayUtils.isEmpty(attachments)) {
-                new AddAttachmentConfluenceMojo(this, newContentBean.getId(), attachments).execute();
+                PageDescriptor newPageDescriptor = new PageDescriptor();
+
+                if (!ArrayUtils.isEmpty(attachments)) {
+                    new AddAttachmentConfluenceMojo(this, newPageDescriptor, attachments).execute();
+                }
+            } catch (Exception e) {
+                throw fail("Unable to upload page", e);
             }
-            if (outputFile != null) {
-                new ExportPageConfluenceMojo(this, newContentBean.getId(), outputFile).execute();
-            }
-        } catch (Exception e) {
-            throw fail("Unable to upload page", e);
         }
-    }
-
-    private String convertWikiToStorageFormat(String wikiText) throws Exception {
-        // we need to call <url>/rest/api/contentbody/convert/storage
-        // passing a post body with {"value":"<wikiText>","representation":"wiki"}
-        URI uri = new URI(url + "rest/api/contentbody/convert/storage");
-        Map<String, String> params = new HashMap<>();
-        params.put("value", wikiText);
-        params.put("representation", "wiki");
-        Map<String, String> executePostRequest = getClient().getRequestService().executePostRequest(uri, params, Map.class);
-        return executePostRequest.get("value");
     }
 }
