@@ -64,7 +64,7 @@ public class ConfluenceClient {
     /**
      * The ConfluenceAPI endpoint.
      */
-    private ConfluenceAPI confluenceAPI;
+    private final ConfluenceAPI confluenceAPI;
 
     /**
      * Constructor.
@@ -79,6 +79,8 @@ public class ConfluenceClient {
      * @param id the id of the page or blog post to fetch.
      *
      * @return the Content instance.
+     *
+     * @throws IOException in case of error.
      */
     public Content getContentById(String id) throws IOException {
         return confluenceAPI.getContentById(id).execute().body();
@@ -89,6 +91,8 @@ public class ConfluenceClient {
      *
      * @return an instance of {@code getContentResults} wrapping the list
      *         of {@code Content} instances obtained from the API call.
+     *
+     * @throws IOException in case of error.
      */
     public ContentResultList getContentResults() throws IOException {
         return confluenceAPI.getContentResults().execute().body();
@@ -102,6 +106,8 @@ public class ConfluenceClient {
      *
      * @return an instance of {@code getContentResults} wrapping the list
      *         of {@code Content} instances obtained from the API call.
+     *
+     * @throws IOException in case of error.
      */
     public ContentResultList getContentBySpaceKeyAndTitle(final String key,
             final String title) throws IOException {
@@ -116,6 +122,8 @@ public class ConfluenceClient {
      *
      * @return an instance of {@code Storage} that contains the result of
      *         the conversion request.
+     *
+     * @throws IOException in case of error.
      *
      * @see
      * <a href="https://confluence.atlassian.com/display/DOC/Confluence+Storage+Format">
@@ -146,6 +154,8 @@ public class ConfluenceClient {
      *
      * @return the result {@code Content} instance with the {@code id} field
      *         updated.
+     *
+     * @throws IOException in case of error.
      */
     public Content postContent(final Content content) throws IOException {
         return confluenceAPI.postContent(content).execute().body();
@@ -159,6 +169,8 @@ public class ConfluenceClient {
      * {@literal ContentStatus}.
      *
      * @param id the id of the page of blog post to be deleted.
+     *
+     * @throws IOException in case of error.
      */
     public void deleteContentById(final String id) throws IOException {
         NoContent noContent = confluenceAPI.deleteContentById(id).execute().body();
@@ -169,6 +181,8 @@ public class ConfluenceClient {
      * Obtain a list of available spaces.
      *
      * @return a list of spaces available on confluence.
+     *
+     * @throws IOException in case of error.
      */
     public List<Space> getSpaces() throws IOException {
         Space[] results = confluenceAPI.getSpaces().execute().body().getSpaces();
@@ -182,6 +196,8 @@ public class ConfluenceClient {
      *
      * @return a list of all content in the given Space identified by
      *         {@code spaceKey}.
+     *
+     * @throws IOException in case of error.
      */
     public List<Content> getAllSpaceContent(final String spaceKey) throws IOException {
         Content[] results = confluenceAPI.getAllSpaceContent(spaceKey,
@@ -202,6 +218,8 @@ public class ConfluenceClient {
      *
      * @return the {@code Space} as a confirmation returned by Confluence
      *         REST API.
+     *
+     * @throws IOException in case of error.
      */
     public Space createSpace(final Space space) throws IOException {
         return confluenceAPI.createSpace(space).execute().body();
@@ -215,6 +233,8 @@ public class ConfluenceClient {
      *
      * @return the {@code Space} as a confirmation returned by Confluence
      *         REST API.
+     *
+     * @throws IOException in case of error.
      */
     public Space createPrivateSpace(final Space space) throws IOException {
         return confluenceAPI.createPrivateSpace(space).execute().body();
@@ -227,6 +247,8 @@ public class ConfluenceClient {
      * @param contentType the type of content to return.
      *
      * @return a list of Content instances obtained from the root.
+     *
+     * @throws IOException in case of error.
      */
     public List<Content> getRootContentBySpaceKey(final String spaceKey,
             final Type contentType) throws IOException {
@@ -246,6 +268,8 @@ public class ConfluenceClient {
      *
      * @return a list of all child content, matching the {@code content}
      *         with the given {@code parentId}.
+     *
+     * @throws IOException in case of error.
      */
     public List<Content> getChildren(final String parentId, final Type contentType) throws IOException {
         Content[] resultList = confluenceAPI
@@ -335,6 +359,11 @@ public class ConfluenceClient {
             return this;
         }
 
+        /**
+         * Sets the verbose parameter.
+         *
+         * @return {@code this}.
+         */
         public Builder verbose() {
             this.verbose = true;
             return this;
@@ -357,9 +386,8 @@ public class ConfluenceClient {
 
         /**
          * This provides a way for users to supply their own implementation of
-         * the underlying
-         * {@link OkHttpClient}. For example, to use
-         * {@link com.squareup.okhttp.OkHttpClient OkHttpClient}
+         * the underlying {@link OkHttpClient}. For example, to use
+         * {@link OkHttpClient OkHttpClient}
          * within a proxy environment:
          * <pre>{@code
          *  // example proxy setup

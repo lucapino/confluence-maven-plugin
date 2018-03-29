@@ -22,16 +22,15 @@ import com.github.lucapino.confluence.model.PageDescriptor;
 import com.github.lucapino.confluence.model.Storage;
 import java.io.File;
 import org.apache.maven.plugin.logging.Log;
+import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
 /**
  * Updates the content of an existing page.
  * If the user don't specify append or prepend, the new content will substitute
  * the whole page.
- *
- * @goal update-page
- * @requiresProject false
  */
+@Mojo(name = "update-page", requiresProject = false)
 public class UpdatePageConfluenceMojo extends AbstractConfluenceMojo {
 
     /**

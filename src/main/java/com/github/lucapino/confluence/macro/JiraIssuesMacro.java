@@ -54,7 +54,6 @@ public class JiraIssuesMacro {
          * A list of JIRA column names, separated by semi-colons (;). You can
          * include any columns
          * recognised by your JIRA site, including custom columns.
-         * <p>
          * <a href="https://confluence.atlassian.com/display/JIRA/Displaying+Search+Results+in+XML">
          * JIRA documentation</a> for a list of names
          */
@@ -135,7 +134,7 @@ public class JiraIssuesMacro {
     }
 
     /**
-     * To be used with the {@link Builder#renderMode(RenderMode)}
+     * To be used with the {@link Builder#renderMode(com.github.lucapino.confluence.macro.JiraIssuesMacro.RenderMode)}
      */
     public enum RenderMode {
         STATIC,
@@ -148,7 +147,7 @@ public class JiraIssuesMacro {
     }
 
     /**
-     * To be used with the {@link Builder#cache(Cache)}
+     * To be used with the {@link Builder#cache(com.github.lucapino.confluence.macro.JiraIssuesMacro.Cache)}
      */
     public enum Cache {
         ON,
@@ -225,7 +224,11 @@ public class JiraIssuesMacro {
      * @return a String containing the wiki markup of this macro, to storage
      *         representation.
      *
+     * @throws java.io.IOException  in case of error.
+     *
      * @throws NullPointerException if {@code client} is null.
+     *
+     *
      */
     public String toStorageRepresentation(final ConfluenceClient client) throws IOException {
         Objects.requireNonNull(client);

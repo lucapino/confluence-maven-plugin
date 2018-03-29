@@ -6,8 +6,7 @@ import java.util.Objects;
 
 /**
  * Represents a piece of content.
- * <p>
- * <p>Example
+ * Example
  * <pre>{@literal
  *      {
  *          "id": "22217244",
