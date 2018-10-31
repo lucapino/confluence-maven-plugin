@@ -328,9 +328,9 @@ limitations under the License.
                         <reports>
                             <report>dependencies</report>
                             <report>team</report>
-                            <report>cim</report>
-                            <report>issue-tracking</report>
-                            <report>license</report>
+                            <report>ci-management</report>
+                            <report>issue-management</report>
+                            <report>licenses</report>
                             <report>scm</report>
                             <report>plugin-management</report>
                             <report>plugins</report>
