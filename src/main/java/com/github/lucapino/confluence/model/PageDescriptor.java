@@ -33,6 +33,12 @@ public class PageDescriptor {
         this.id = id;
     }
 
+    public PageDescriptor(String id, String space, String title) {
+        this.id = id;
+        this.space = space;
+        this.title = title;
+    }
+
     public String getId() {
         return id;
     }

@@ -16,15 +16,19 @@
  */
 package com.github.lucapino.confluence;
 
-import com.github.lucapino.confluence.model.Body;
-import com.github.lucapino.confluence.model.Content;
-import com.github.lucapino.confluence.model.ContentResultList;
 import com.github.lucapino.confluence.model.PageDescriptor;
-import com.github.lucapino.confluence.model.Parent;
-import com.github.lucapino.confluence.model.Space;
 import com.github.lucapino.confluence.model.Storage;
-import com.github.lucapino.confluence.model.Type;
+import com.github.lucapino.confluence.rest.core.api.domain.content.AncestorBean;
+import com.github.lucapino.confluence.rest.core.api.domain.content.BodyBean;
+import com.github.lucapino.confluence.rest.core.api.domain.content.CommentBean;
+import com.github.lucapino.confluence.rest.core.api.domain.content.ContentBean;
+import com.github.lucapino.confluence.rest.core.api.domain.content.ContentResultsBean;
+import com.github.lucapino.confluence.rest.core.api.domain.content.StorageBean;
+import com.github.lucapino.confluence.rest.core.api.domain.space.SpaceBean;
+import com.github.lucapino.confluence.rest.core.api.misc.ContentType;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -59,17 +63,24 @@ public class AddCommentConfluenceMojo extends AbstractConfluenceMojo {
             String evaluate = processContent(commentBody);
             try {
                 // configure page
-                ContentResultList contentResult = getClient().getContentBySpaceKeyAndTitle(page.getSpace(), page.getTitle());
-                Content parent = contentResult.getContents()[0];
-                Parent parentPage = new Parent();
-                parentPage.setId(parent.getId());
-                Content content = new Content();
-                content.setType(Type.COMMENT);
-                content.setSpace(new Space(page.getSpace()));
-                content.setTitle(page.getTitle());
-                content.setAncestors(new Parent[]{parentPage});
-                content.setBody(new Body(new Storage(evaluate, Storage.Representation.STORAGE.toString())));
-                getClient().postContent(content);
+                ContentResultsBean contentResult = getClientFactory().getContentClient().getContent(ContentType.PAGE, page.getSpace(), page.getTitle(), null, null, null, 0, 0).get();
+                ContentBean parent = contentResult.getResults().get(0);
+                CommentBean comment = new CommentBean();
+                comment.setSpace(new SpaceBean(page.getSpace()));
+                comment.setType(ContentType.COMMENT.getName());
+                List<AncestorBean> ancestors = new ArrayList<>();
+                AncestorBean ancestor = new AncestorBean();
+                ancestor.setId(parent.getId());
+                ancestors.add(ancestor);
+                comment.setAncestors(ancestors);
+                BodyBean body = new BodyBean();
+                StorageBean storage = new StorageBean();
+                storage.setRepresentation(Storage.Representation.STORAGE.toString());
+                storage.setValue(evaluate);
+                body.setStorage(storage);
+                comment.setBody(body);      
+                getClientFactory().getContentClient().createComment(comment);
+                
             } catch (MojoFailureException e) {
                 throw fail("Unable to upload blog entry", e);
             }

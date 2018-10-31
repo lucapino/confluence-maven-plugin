@@ -1,3 +1,16 @@
+<h1>Maven Confluence Plugin</h1><br>
+
+Maven plugin for accessing Atlassian Confluence
+
+[![][Build Status img]][Build Status]
+[![][Coverage Status img]][Coverage Status]
+[![][Dependency Status img]][Dependency Status]
+[![][license img]][license]
+[![][Maven Central img]][Maven Central]
+[![][Javadocs img]][Javadocs]
+
+Plugin documentation can be found at https://lucapino.github.io/confluence-maven-plugin
+
 Available goals:
 ================
 * **add-page** - adds new page (with attachments) and optionally exports it
@@ -88,3 +101,21 @@ Example _update-page_ goal configuration:
         <inputFile>${basedir}/pagetemplate.txt</inputFile>
         <outputFile>${basedir}/HelloWorld.pdf</outputFile>
     </configuration>
+
+[Build Status]:https://travis-ci.org/lucapino/confluence-maven-plugin
+[Build Status img]:https://travis-ci.org/lucapino/confluence-maven-plugin.svg?branch=master
+
+[Coverage Status]:https://codecov.io/gh/lucapino/confluence-maven-plugin
+[Coverage Status img]:https://codecov.io/gh/lucapino/confluence-maven-plugin/branch/master/graph/badge.svg
+
+[Dependency Status]:https://snyk.io/test/github/lucapino/confluence-maven-plugin
+[Dependency Status img]:https://snyk.io/test/github/lucapino/confluence-maven-plugin/badge.svg?style=flat
+
+[license]:LICENSE
+[license img]:https://img.shields.io/badge/license-Apache%202-blue.svg
+
+[Maven Central]:https://maven-badges.herokuapp.com/maven-central/com.github.lucapino/confluence-maven-plugin
+[Maven Central img]:https://maven-badges.herokuapp.com/maven-central/com.github.lucapino/confluence-maven-plugin/badge.svg
+
+[Javadocs]:http://www.javadoc.io/doc/com.github.lucapino/confluence-maven-plugin
+[Javadocs img]:http://javadoc.io/badge/com.github.lucapino/confluence-maven-plugin.svg

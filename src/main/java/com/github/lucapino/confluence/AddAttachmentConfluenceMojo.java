@@ -16,17 +16,18 @@
  */
 package com.github.lucapino.confluence;
 
-import com.github.lucapino.confluence.model.Body;
-import com.github.lucapino.confluence.model.Content;
-import com.github.lucapino.confluence.model.ContentResultList;
 import com.github.lucapino.confluence.model.PageDescriptor;
-import com.github.lucapino.confluence.model.Parent;
-import com.github.lucapino.confluence.model.Space;
-import com.github.lucapino.confluence.model.Storage;
-import com.github.lucapino.confluence.model.Type;
+import com.github.lucapino.confluence.rest.core.api.domain.content.AncestorBean;
+import com.github.lucapino.confluence.rest.core.api.domain.content.AttachmentBean;
+import com.github.lucapino.confluence.rest.core.api.domain.content.ContentBean;
+import com.github.lucapino.confluence.rest.core.api.domain.content.ContentResultsBean;
+import com.github.lucapino.confluence.rest.core.api.domain.space.SpaceBean;
+import com.github.lucapino.confluence.rest.core.api.misc.ContentType;
 import java.io.File;
 import java.io.IOException;
-import org.apache.commons.io.FileUtils;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -80,18 +81,27 @@ public class AddAttachmentConfluenceMojo extends AbstractConfluenceMojo {
     private void addAttachment(PageDescriptor page, File file) throws MojoFailureException {
         try {
             // configure page
-            ContentResultList contentResult = getClient().getContentBySpaceKeyAndTitle(page.getSpace(), page.getTitle());
-            Content parent = contentResult.getContents()[0];
-            Parent parentPage = new Parent();
-            parentPage.setId(parent.getId());
-            Content content = new Content();
-            content.setType(Type.ATTACHMENT);
-            content.setSpace(new Space(page.getSpace()));
-            content.setTitle(page.getTitle());
-            content.setAncestors(new Parent[]{parentPage});
-            content.setBody(new Body(new Storage(FileUtils.readFileToString(file), Storage.Representation.STORAGE.toString())));
-            getClient().postContent(content);
-        } catch (IOException e) {
+            ContentResultsBean contentResult = getClientFactory().getContentClient().getContent(ContentType.PAGE, page.getSpace(), page.getTitle(), null, null, null, 0, 0).get();
+            // getContentBySpaceKeyAndTitle(page.getSpace(), page.getTitle());
+            ContentBean parent = contentResult.getResults().get(0);
+            AttachmentBean attachment = new AttachmentBean(file, null);
+            attachment.setSpace(new SpaceBean(page.getSpace()));
+            attachment.setTitle(page.getTitle());
+            List<AncestorBean> ancestors = new ArrayList<>();
+            AncestorBean ancestor = new AncestorBean();
+            ancestor.setId(parent.getId());
+            ancestors.add(ancestor);
+            attachment.setAncestors(ancestors);
+            
+            //Content content = new Content();
+            // content.setType(Type.ATTACHMENT);
+            // content.setSpace(new Space(page.getSpace()));
+            //content.setTitle(page.getTitle());
+            //content.setAncestors(new Parent[]{parentPage});
+            // content.setBody(new Body(new Storage(FileUtils.readFileToString(file), Storage.Representation.STORAGE.toString())));
+            getClientFactory().getContentClient().uploadAttachment(attachment, parent);
+            // postContent(content);
+        } catch (ExecutionException | InterruptedException | IOException e) {
             throw fail("Unable to upload attachment", e);
         }
     }

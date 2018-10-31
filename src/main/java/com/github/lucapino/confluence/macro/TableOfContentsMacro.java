@@ -227,7 +227,7 @@ public class TableOfContentsMacro {
     /**
      * Stores the parameters of this code block macro.
      */
-    private EnumMap<Parameters, String> parameters;
+    private final EnumMap<Parameters, String> parameters;
 
     /**
      * Constructor.

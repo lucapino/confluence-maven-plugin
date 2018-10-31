@@ -11,11 +11,11 @@ public class ExpandMacro {
     /**
      * The title of the expandable.
      */
-    private String title;
+    private final String title;
     /**
      * The contents of the expandable.
      */
-    private String body;
+    private final String body;
 
     /**
      * @param builder the builder factory to use.

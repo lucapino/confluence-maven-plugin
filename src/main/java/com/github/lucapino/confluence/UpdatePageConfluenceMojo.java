@@ -16,10 +16,13 @@
  */
 package com.github.lucapino.confluence;
 
-import com.github.lucapino.confluence.model.Body;
-import com.github.lucapino.confluence.model.Content;
 import com.github.lucapino.confluence.model.PageDescriptor;
 import com.github.lucapino.confluence.model.Storage;
+import com.github.lucapino.confluence.rest.core.api.domain.content.BodyBean;
+import com.github.lucapino.confluence.rest.core.api.domain.content.ContentBean;
+import com.github.lucapino.confluence.rest.core.api.domain.content.ContentResultsBean;
+import com.github.lucapino.confluence.rest.core.api.domain.content.StorageBean;
+import com.github.lucapino.confluence.rest.core.api.misc.ContentType;
 import java.io.File;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -78,28 +81,30 @@ public class UpdatePageConfluenceMojo extends AbstractConfluenceMojo {
             }
 
             // configure page
-            Content updatedPage = getClient().getContentBySpaceKeyAndTitle(parent.getSpace(), pageTitle).getContents()[0];
+            ContentResultsBean contentResult = getClientFactory().getContentClient().getContent(ContentType.PAGE, parent.getSpace(), pageTitle, null, null, null, 0, 0).get();
+            // getContentBySpaceKeyAndTitle(page.getSpace(), page.getTitle());
+            ContentBean updatedPage = contentResult.getResults().get(0);
+
             // always in storage format
             String oldContent = updatedPage.getBody().getStorage().getValue();
             String content = processContent(inputFile);
-            Storage newStorage;
+            StorageBean storage = new StorageBean();
             if (wikiFormat) {
-                Storage contentStorage = new Storage(content, Storage.Representation.WIKI.toString());
-                newStorage = getClient().convertContent(contentStorage, Storage.Representation.STORAGE);
+                storage.setRepresentation(Storage.Representation.WIKI.toString());
             } else {
-                newStorage = new Storage(content, Storage.Representation.STORAGE.toString());
+                storage.setRepresentation(Storage.Representation.STORAGE.toString());
             }
             // now append or prepend
             if (prepend) {
-                content = newStorage.getValue() + oldContent;
+                content = storage.getValue() + oldContent;
             } else if (append) {
-                content = oldContent + newStorage.getValue();
+                content = oldContent + storage.getValue();
             }
-            newStorage.setValue(content);
-
-            updatedPage.setBody(new Body(newStorage));
-            getClient().postContent(updatedPage);
-
+            storage.setValue(content);
+            BodyBean body = new BodyBean();
+            body.setStorage(storage);
+            updatedPage.setBody(body);
+            getClientFactory().getContentClient().updateContent(updatedPage);
         }
     }
 }

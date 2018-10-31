@@ -16,12 +16,19 @@
  */
 package com.github.lucapino.confluence;
 
-import com.github.lucapino.confluence.helpers.ConfluenceClient;
 import com.github.lucapino.confluence.helpers.TemplateEvaluator;
+import com.github.lucapino.confluence.rest.client.api.ClientFactory;
+import com.github.lucapino.confluence.rest.client.impl.ClientFactoryImpl;
+import com.github.lucapino.confluence.rest.core.impl.APIUriProvider;
+import com.github.lucapino.confluence.rest.core.impl.HttpAuthRequestService;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.UnsupportedEncodingException;
+import java.net.URI;
 import java.util.HashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -100,7 +107,7 @@ public abstract class AbstractConfluenceMojo extends AbstractMojo {
     protected boolean verbose;
 
     private TemplateEvaluator evaluator;
-    private ConfluenceClient client;
+    private ClientFactory factory;
 
     public AbstractConfluenceMojo() {
     }
@@ -110,7 +117,7 @@ public abstract class AbstractConfluenceMojo extends AbstractMojo {
         this.url = mojo.url;
         this.project = mojo.project;
         this.evaluator = mojo.evaluator;
-        this.client = mojo.client;
+        this.factory = mojo.factory;
     }
 
     public TemplateEvaluator getEvaluator() {
@@ -122,22 +129,22 @@ public abstract class AbstractConfluenceMojo extends AbstractMojo {
         return evaluator;
     }
 
-    public ConfluenceClient getClient() throws MojoFailureException {
-        if (client == null) {
+    public ClientFactory getClientFactory() throws MojoFailureException {
+        if (factory == null) {
             loadUserCredentials();
             getLog().debug("Connecting to Confluence server");
             try {
-                ConfluenceClient.Builder builder = ConfluenceClient.builder().baseURL(url).username(username).password(password);
-                if (verbose) {
-                    builder = builder.verbose();
-                }
-                client = builder.build();
+                HttpAuthRequestService requestService = new HttpAuthRequestService();
+                requestService.connect(new URI(url), username, password);
+                APIUriProvider uriProvider = new APIUriProvider(new URI(url));
+                ExecutorService executorService = Executors.newCachedThreadPool();
+                factory = new ClientFactoryImpl(executorService, requestService, uriProvider);
                 getLog().info("Successfuly connected to Confluence server");
             } catch (Exception e) {
                 getLog().error("Unable to connect to Confluence server", e);
             }
         }
-        return client;
+        return factory;
     }
 
     private void loadUserCredentials() {

@@ -16,20 +16,19 @@
  */
 package com.github.lucapino.confluence;
 
-import com.github.lucapino.confluence.model.Body;
-import com.github.lucapino.confluence.model.Content;
-import com.github.lucapino.confluence.model.ContentResultList;
 import com.github.lucapino.confluence.model.PageDescriptor;
-import com.github.lucapino.confluence.model.Parent;
-import com.github.lucapino.confluence.model.Space;
 import com.github.lucapino.confluence.model.Storage;
-import com.github.lucapino.confluence.model.Type;
+import com.github.lucapino.confluence.rest.core.api.domain.content.AncestorBean;
+import com.github.lucapino.confluence.rest.core.api.domain.content.BodyBean;
+import com.github.lucapino.confluence.rest.core.api.domain.content.ContentBean;
+import com.github.lucapino.confluence.rest.core.api.domain.content.ContentResultsBean;
+import com.github.lucapino.confluence.rest.core.api.domain.content.StorageBean;
+import com.github.lucapino.confluence.rest.core.api.domain.space.SpaceBean;
+import com.github.lucapino.confluence.rest.core.api.misc.ContentType;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.UnsupportedEncodingException;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.commons.lang.ArrayUtils;
-import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -85,26 +84,35 @@ public class AddPageConfluenceMojo extends AbstractConfluenceMojo {
         } else {
             try {
                 // configure page
-                ContentResultList contentResult = getClient().getContentBySpaceKeyAndTitle(parent.getSpace(), parent.getTitle());
-                Content parentContent = contentResult.getContents()[0];
-                Parent parentPage = new Parent();
-                parentPage.setId(parentContent.getId());
-                Content newPage = new Content();
-                newPage.setType(Type.PAGE);
-                newPage.setSpace(new Space(parent.getSpace()));
-                newPage.setTitle(pageTitle);
-                newPage.setAncestors(new Parent[]{parentPage});
-                Storage newStorage;
-                if (wikiFormat) {
-                    Storage contentStorage = new Storage(content, Storage.Representation.WIKI.toString());
-                    newStorage = getClient().convertContent(contentStorage, Storage.Representation.STORAGE);
-                } else {
-                    newStorage = new Storage(content, Storage.Representation.STORAGE.toString());
-                }
-                newPage.setBody(new Body(newStorage));
-                getClient().postContent(newPage);
+                ContentResultsBean contentResult = getClientFactory().getContentClient().getContent(ContentType.PAGE, parent.getSpace(), parent.getTitle(), null, null, null, 0, 0).get();
+                ContentBean parentContent = contentResult.getResults().get(0);
 
-                PageDescriptor newPageDescriptor = new PageDescriptor();
+                ContentBean newPage = new ContentBean();
+                newPage.setType(ContentType.PAGE.getName());
+                newPage.setSpace(new SpaceBean(parent.getSpace()));
+                newPage.setTitle(pageTitle);
+                List<AncestorBean> ancestors = new ArrayList<>();
+                AncestorBean ancestor = new AncestorBean();
+                ancestor.setId(parentContent.getId());
+                ancestors.add(ancestor);
+                newPage.setAncestors(ancestors);
+                BodyBean body = new BodyBean();
+                StorageBean storage;
+                if (wikiFormat) {
+                    StorageBean contentStorage = new StorageBean();
+                    contentStorage.setValue(content);
+                    contentStorage.setRepresentation(Storage.Representation.WIKI.toString());
+                    storage = getClientFactory().getContentClient().convertContent(contentStorage).get();
+                } else {
+                    storage = new StorageBean();
+                    storage.setRepresentation(Storage.Representation.STORAGE.toString());
+                    storage.setValue(content);
+                }
+                body.setStorage(storage);
+                newPage.setBody(body);
+                ContentBean newContent = getClientFactory().getContentClient().createContent(newPage).get();
+
+                PageDescriptor newPageDescriptor = new PageDescriptor(newContent.getId(), newContent.getSpace().getKey(), newContent.getTitle());
 
                 if (!ArrayUtils.isEmpty(attachments)) {
                     new AddAttachmentConfluenceMojo(this, newPageDescriptor, attachments).execute();

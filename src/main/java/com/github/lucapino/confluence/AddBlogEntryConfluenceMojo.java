@@ -16,13 +16,13 @@
  */
 package com.github.lucapino.confluence;
 
-import com.github.lucapino.confluence.model.Body;
-import com.github.lucapino.confluence.model.Content;
-import com.github.lucapino.confluence.model.Space;
 import com.github.lucapino.confluence.model.Storage;
-import com.github.lucapino.confluence.model.Type;
+import com.github.lucapino.confluence.rest.core.api.domain.content.BodyBean;
+import com.github.lucapino.confluence.rest.core.api.domain.content.ContentBean;
+import com.github.lucapino.confluence.rest.core.api.domain.content.StorageBean;
+import com.github.lucapino.confluence.rest.core.api.domain.space.SpaceBean;
+import com.github.lucapino.confluence.rest.core.api.misc.ContentType;
 import java.io.File;
-import org.apache.commons.io.FileUtils;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -60,12 +60,16 @@ public class AddBlogEntryConfluenceMojo extends AbstractConfluenceMojo {
             String evaluate = processContent(entryFile);
             try {
                 // configure page
-                Content content = new Content();
-                content.setType(Type.BLOGPOST);
-                content.setSpace(new Space(space));
-                content.setTitle(entryTitle);
-                content.setBody(new Body(new Storage(evaluate, Storage.Representation.STORAGE.toString())));
-                getClient().postContent(content);
+                ContentBean blog = new ContentBean();
+                blog.setType(ContentType.BLOGPOST.getName());
+                blog.setSpace(new SpaceBean(space));
+                blog.setTitle(entryTitle);
+                BodyBean body = new BodyBean();
+                StorageBean storage = new StorageBean();
+                storage.setRepresentation(Storage.Representation.STORAGE.toString());
+                storage.setValue(evaluate);
+                body.setStorage(storage);
+                getClientFactory().getContentClient().createContent(blog);
             } catch (MojoFailureException e) {
                 throw fail("Unable to upload blog entry", e);
             }

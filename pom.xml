@@ -36,8 +36,8 @@ limitations under the License.
         <connection>scm:git:git@github.com:lucapino/confluence-maven-plugin.git</connection>
         <developerConnection>scm:git:git@github.com:lucapino/confluence-maven-plugin.git</developerConnection>
         <url>https://github.com/lucapino/confluence-maven-plugin</url>
-      <tag>HEAD</tag>
-  </scm>
+        <tag>HEAD</tag>
+    </scm>
 
     <ciManagement>
         <system>Travis</system>
@@ -327,7 +327,7 @@ limitations under the License.
                     <reportSet>
                         <reports>
                             <report>dependencies</report>
-                            <report>project-team</report>
+                            <report>team</report>
                             <report>cim</report>
                             <report>issue-tracking</report>
                             <report>license</report>
@@ -408,25 +408,9 @@ limitations under the License.
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.squareup.okhttp3</groupId>
-            <artifactId>okhttp</artifactId>
-            <version>3.10.0</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.squareup.retrofit2</groupId>
-            <artifactId>retrofit</artifactId>
-            <version>2.4.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.squareup.retrofit2</groupId>
-            <artifactId>converter-gson</artifactId>
-            <version>2.4.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.squareup.okhttp3</groupId>
-            <artifactId>logging-interceptor</artifactId>
-            <version>3.9.1</version>
+            <groupId>com.github.lucapino</groupId>
+            <artifactId>confluence-rest-client</artifactId>
+            <version>1.0.1</version>
         </dependency>
 
         <!-- Logging -->
@@ -475,12 +459,6 @@ limitations under the License.
         </dependency>
 
         <!-- Test -->
-        <dependency>
-            <groupId>org.easymock</groupId>
-            <artifactId>easymock</artifactId>
-            <version>3.5</version>
-            <scope>test</scope>
-        </dependency>
         <dependency>
             <groupId>org.apache.maven.plugin-testing</groupId>
             <artifactId>maven-plugin-testing-harness</artifactId>

@@ -1,15 +1,11 @@
 package com.github.lucapino.confluence.macro;
 
-import com.github.lucapino.confluence.helpers.ConfluenceClient;
-import com.github.lucapino.confluence.model.Storage;
 import com.github.lucapino.confluence.util.StringUtils;
-import java.io.IOException;
 
 import java.net.URL;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -134,7 +130,8 @@ public class JiraIssuesMacro {
     }
 
     /**
-     * To be used with the {@link Builder#renderMode(com.github.lucapino.confluence.macro.JiraIssuesMacro.RenderMode)}
+     * To be used with the
+     * {@link Builder#renderMode(com.github.lucapino.confluence.macro.JiraIssuesMacro.RenderMode)}
      */
     public enum RenderMode {
         STATIC,
@@ -147,7 +144,8 @@ public class JiraIssuesMacro {
     }
 
     /**
-     * To be used with the {@link Builder#cache(com.github.lucapino.confluence.macro.JiraIssuesMacro.Cache)}
+     * To be used with the
+     * {@link Builder#cache(com.github.lucapino.confluence.macro.JiraIssuesMacro.Cache)}
      */
     public enum Cache {
         ON,
@@ -213,27 +211,6 @@ public class JiraIssuesMacro {
         sb.deleteCharAt(sb.length() - 1); // delete the trailing '|' char
         sb.append("}");
         return sb.toString();
-    }
-
-    /**
-     * Convert wiki markup produced by this macro to storage representation.
-     *
-     * @param client the {@code ConfluenceClient} to use to convert to storage
-     *               form.
-     *
-     * @return a String containing the wiki markup of this macro, to storage
-     *         representation.
-     *
-     * @throws java.io.IOException  in case of error.
-     *
-     * @throws NullPointerException if {@code client} is null.
-     *
-     *
-     */
-    public String toStorageRepresentation(final ConfluenceClient client) throws IOException {
-        Objects.requireNonNull(client);
-        Storage wikiStorage = new Storage(toWikiMarkup(), Storage.Representation.WIKI.toString());
-        return client.convertContent(wikiStorage, Storage.Representation.STORAGE).getValue();
     }
 
     /**
