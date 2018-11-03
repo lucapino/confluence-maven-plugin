@@ -1,3 +1,19 @@
+/*
+ * Copyright 2013 Luca Tagliani
+ * Copyright 2015 Jonathon Hope
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.github.lucapino.confluence.macro;
 
 import com.github.lucapino.confluence.util.StringUtils;
@@ -19,13 +35,15 @@ import java.util.Map;
  * }</pre>
  *
  * @author Jonathon Hope
- * @see <a href="https://confluence.atlassian.com/display/DOC/Table+of+Contents+Macro">table of Contents
- * Macro Documentation</a>
+ * @see
+ * <a href="https://confluence.atlassian.com/display/DOC/Table+of+Contents+Macro">table
+ * of Contents Macro Documentation</a>
  */
 public class TableOfContentsMacro {
 
     /**
-     * Parameters are options that you can set to control the content or format of the macro output.
+     * Parameters are options that you can set to control the content or format
+     * of the macro output.
      */
     public enum Parameters {
         /**
@@ -55,22 +73,23 @@ public class TableOfContentsMacro {
          */
         INDENT,
         /**
-         * This parameter applies to flat lists only. Configures the separator used
-         * for separating content items.
+         * This parameter applies to flat lists only. Configures the separator
+         * used for separating content items.
          *
          * @see TableOfContentsMacro.Separator
          */
         SEPARATOR,
         /**
-         * Select the highest heading level to start your TOC  list. For example, entering
-         * {@code 2} will include levels {@literal <h2>} and lower levels, but
-         * will not include level {@literal <h1>} headings and below.
+         * Select the highest heading level to start your TOC list. For example,
+         * entering {@code 2} will include levels {@literal <h2>} and lower
+         * levels, but will not include level {@literal <h1>} headings and
+         * below.
          */
         MIN_LEVEL,
         /**
-         * Select the lowest heading level to include.  For example, entering
-         * {@code 2} will include levels {@literal <h1>} and {@literal <h2>}, but
-         * will not include level {@literal <h3>} headings and below.
+         * Select the lowest heading level to include. For example, entering
+         * {@code 2} will include levels {@literal <h1>} and {@literal <h2>},
+         * but will not include level {@literal <h3>} headings and below.
          */
         MAX_LEVEL,
         /**
@@ -90,9 +109,8 @@ public class TableOfContentsMacro {
      */
     public enum OutputType {
         /**
-         * Causes the output style of the table of contents
-         * to be laid out in a flat series of links separated
-         * by square brackets.
+         * Causes the output style of the table of contents to be laid out in a
+         * flat series of links separated by square brackets.
          * <p>
          * For Example:
          * <pre>{@literal
@@ -101,8 +119,8 @@ public class TableOfContentsMacro {
          */
         FLAT,
         /**
-         * Causes the output style of the table of contents to be laid out
-         * as an indented list.
+         * Causes the output style of the table of contents to be laid out as an
+         * indented list.
          * <p>
          * For example:
          * <pre>{@literal
@@ -135,8 +153,8 @@ public class TableOfContentsMacro {
          */
         CIRCLE,
         /**
-         * disc, the list style is a filled circle. This is the typical
-         * bullet list, and is used for this example list.
+         * disc, the list style is a filled circle. This is the typical bullet
+         * list, and is used for this example list.
          */
         DISC,
         /**
@@ -152,11 +170,13 @@ public class TableOfContentsMacro {
          */
         LOWER_ALPHA,
         /**
-         * lower-roman, the list style is lower roman numerals (i, ii, iii, iv, v, vi)
+         * lower-roman, the list style is lower roman numerals (i, ii, iii, iv,
+         * v, vi)
          */
         LOWER_ROMAN,
         /**
-         * upper-roman, the list style is upper roman numerals (I, II, III, IV, V, VI)
+         * upper-roman, the list style is upper roman numerals (I, II, III, IV,
+         * V, VI)
          */
         UPPER_ROMAN;
 
@@ -196,7 +216,8 @@ public class TableOfContentsMacro {
     }
 
     /**
-     * This parameter applies to flat lists only.  You can enter any of the following values:
+     * This parameter applies to flat lists only. You can enter any of the
+     * following values:
      */
     public enum Separator {
         /**
@@ -223,7 +244,6 @@ public class TableOfContentsMacro {
     }
 
     // API
-
     /**
      * Stores the parameters of this code block macro.
      */
@@ -232,14 +252,16 @@ public class TableOfContentsMacro {
     /**
      * Constructor.
      *
-     * @param builder the factory object used to build an instance of this class.
+     * @param builder the factory object used to build an instance of this
+     * class.
      */
     public TableOfContentsMacro(final Builder builder) {
         this.parameters = builder.parameters;
     }
 
     /**
-     * @return a String containing the XML markup for the confluence storage format.
+     * @return a String containing the XML markup for the confluence storage
+     * format.
      */
     public String toMarkup() {
         final StringBuilder sb = new StringBuilder();
@@ -268,6 +290,7 @@ public class TableOfContentsMacro {
      * A class for implementing the Builder Pattern for {@code CodeBlockMacro}.
      */
     public static class Builder {
+
         private EnumMap<Parameters, String> parameters;
 
         // check if a parameter has already been set.
@@ -355,11 +378,11 @@ public class TableOfContentsMacro {
         }
 
         /**
-         * Set a custom separator. Each item is separated by the value you enter.
-         * You can enter any text as a separator, for example "***".
-         * If using a custom separator, be aware that text displays
-         * exactly as entered, with no additional white space to further
-         * separate the characters.
+         * Set a custom separator. Each item is separated by the value you
+         * enter. You can enter any text as a separator, for example "***". If
+         * using a custom separator, be aware that text displays exactly as
+         * entered, with no additional white space to further separate the
+         * characters.
          *
          * @param separator the custom separator to use.
          * @return {@code this}.
@@ -374,8 +397,8 @@ public class TableOfContentsMacro {
         /**
          * Set the minimum heading level to include in the table of contents
          *
-         * @param i the number between 1 and 6 corresponding to the {@literal <h1> - <h6>}.
-         *          For example: {@code 1} for {@literal <h1>}.
+         * @param i the number between 1 and 6 corresponding to the
+         * {@literal <h1> - <h6>}. For example: {@code 1} for {@literal <h1>}.
          * @return {@code this}.
          */
         public Builder minHeadingLevel(final int i) {
@@ -388,12 +411,11 @@ public class TableOfContentsMacro {
             return this;
         }
 
-
         /**
          * Set the maximum heading level to include in the table of contents
          *
-         * @param i the number between 1 and 6 corresponding to the {@literal <h1> - <h6>}.
-         *          For example: {@code 1} for {@literal <h1>}.
+         * @param i the number between 1 and 6 corresponding to the
+         * {@literal <h1> - <h6>}. For example: {@code 1} for {@literal <h1>}.
          * @return {@code this}.
          */
         public Builder maxHeadingLevel(final int i) {
